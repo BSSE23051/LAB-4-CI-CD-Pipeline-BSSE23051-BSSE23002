@@ -5,8 +5,9 @@ pipeline {
         DOCKER_IMAGE_REPO = 'bsse23051/cicd-demo'
         DIMAGE_TAG = "v${BUILD_NUMBER}"
         // Added variables for deployment logic
-        K8S_DEPLOYMENT = 'cicd-demo-deployment'
-        K8S_CONTAINER = 'cicd-demo' 
+        K8S_DEPLOYMENT = 'classactivityweb-deployment' 
+        // FIX: Match the container name inside your deployment.yaml
+        K8S_CONTAINER = 'classactivityweb' 
     }
 
     stages {
