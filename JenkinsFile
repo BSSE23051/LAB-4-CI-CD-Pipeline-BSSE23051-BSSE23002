@@ -40,14 +40,23 @@ pipeline {
             }
         }
 
-        stage('4. Deploy to Kubernetes') {
+         stage('4. Deploy to Kubernetes') {
             steps {
                 echo 'Deploying to Kubernetes...'
-                sh "kubectl apply -f deployment.yaml"
-                // DEPLOYMENT FIX: Use kubectl set image to update the running deployment
-                sh "kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${DOCKER_IMAGE_REPO}:${DIMAGE_TAG} --record"
-                sh "kubectl rollout status deployment/${K8S_DEPLOYMENT}"
+                
+                // IMPORTANT: Set the KUBECONFIG environment variable 
+                // to point to your Windows .kube/config file
+                withEnv(["KUBECONFIG=/mnt/c/Users/hh/.kube/config"]) {
+                    
+                    // 1. Ensure the deployment exists
+                    sh "kubectl apply -f deployment.yaml"
+                    
+                    // 2. Update the deployment to use the new image tag
+                    sh "kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${DOCKER_IMAGE_REPO}:${DIMAGE_TAG} --record"
+                    
+                    // 3. Wait for the rollout to complete
+                    sh "kubectl rollout status deployment/${K8S_DEPLOYMENT}"
+                }
             }
         }
     }
-}
