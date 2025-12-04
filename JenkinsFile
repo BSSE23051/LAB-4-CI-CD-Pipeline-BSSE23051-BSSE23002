@@ -4,7 +4,7 @@ pipeline {
         // Your Docker Hub repo, already correctly set
         DOCKER_IMAGE_REPO = 'bsse23051/cicd-demo'
         DIMAGE_TAG = "v${BUILD_NUMBER}"
-        // ADDED: Environment variables for deployment logic
+        // Added variables for deployment logic
         K8S_DEPLOYMENT = 'cicd-demo-deployment'
         K8S_CONTAINER = 'cicd-demo' 
     }
@@ -18,15 +18,13 @@ pipeline {
         }
         
         stage('2. Push Image') {
-            steps { // <--- SYNTAX FIX APPLIED: 'steps' block is here
-                // CREDENTIAL FIX APPLIED: Using variables DOCKER_USER/DOCKER_PASSWORD
+            steps {
+                // IMPORTANT: This block assumes you have fixed the credential ID to 'dockerhub-creds'
+                // and are using the variable names DOCKER_USER/DOCKER_PASSWORD.
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USER')]) {
                     sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USER --password-stdin"
                     
-                    // Push unique build tag
                     sh "docker push ${DOCKER_IMAGE_REPO}:${DIMAGE_TAG}"
-
-                    // Tag and push as latest for easy deployment
                     sh "docker tag ${DOCKER_IMAGE_REPO}:${DIMAGE_TAG} ${DOCKER_IMAGE_REPO}:latest"
                     sh "docker push ${DOCKER_IMAGE_REPO}:latest"
                 }
@@ -40,23 +38,21 @@ pipeline {
             }
         }
 
-         stage('4. Deploy to Kubernetes') {
+        stage('4. Deploy to Kubernetes') {
             steps {
                 echo 'Deploying to Kubernetes...'
                 
-                // IMPORTANT: Set the KUBECONFIG environment variable 
-                // to point to your Windows .kube/config file
+                // CRITICAL FIX: Set the KUBECONFIG variable for kubectl authentication
                 withEnv(["KUBECONFIG=/mnt/c/Users/hh/.kube/config"]) {
                     
-                    // 1. Ensure the deployment exists
                     sh "kubectl apply -f deployment.yaml"
                     
-                    // 2. Update the deployment to use the new image tag
+                    // Update deployment with the new unique image tag
                     sh "kubectl set image deployment/${K8S_DEPLOYMENT} ${K8S_CONTAINER}=${DOCKER_IMAGE_REPO}:${DIMAGE_TAG} --record"
                     
-                    // 3. Wait for the rollout to complete
                     sh "kubectl rollout status deployment/${K8S_DEPLOYMENT}"
                 }
             }
         }
     }
+} // <-- CRITICAL: FINAL CLOSING BRACE FOR 'pipeline' BLOCK
