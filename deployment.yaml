@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: classactivityweb-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: classactivityweb
+  template:
+    metadata:
+      labels:
+        app: classactivityweb
+    spec:
+      containers:
+      - name: classactivityweb
+        image: classactivityweb:v2
+        ports:
+        - containerPort: 80
